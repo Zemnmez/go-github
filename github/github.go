@@ -910,18 +910,21 @@ func (t *BasicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error
 	//
 	// Since we are going to modify only req.Header here, we only need a deep copy
 	// of req.Header.
-	req2 := new(http.Request)
-	*req2 = *req
-	req2.Header = make(http.Header, len(req.Header))
+	
+	newReq := *req
+	newReq.Header = make(http.Header, len(req.Header))
+	
+	// it is not necessary here to create new instances of string slices,
+	// as we always replace the existing headers (and therefore slices)
 	for k, s := range req.Header {
-		req2.Header[k] = append([]string(nil), s...)
+		newReq.Header[k] = s
 	}
 
-	req2.SetBasicAuth(t.Username, t.Password)
+	newReq.SetBasicAuth(t.Username, t.Password)
 	if t.OTP != "" {
-		req2.Header.Set(headerOTP, t.OTP)
+		newReq.Header.Set(headerOTP, t.OTP)
 	}
-	return t.transport().RoundTrip(req2)
+	return t.transport().RoundTrip(&newReq)
 }
 
 // Client returns an *http.Client that makes requests that are authenticated
